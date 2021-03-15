@@ -12,68 +12,58 @@ import UIKit
 class audioPlayer : ObservableObject {
     
     var action : AVAudioPlayer?
-    var musicStore = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")
-    
-//    var currentSelection : MusicItem
-//    var index : Int // maybe not necessary
-//    @State var showPlayer = false
-//    @EnvironmentObject var store : MusicStore
+    var currentSelection : MusicItem
+    var store = MusicStore()
     
     
-    @Published var playValue: TimeInterval = 0.0 // do i need this variable?
+    
+    @Published var playValue: TimeInterval = 0.0
+    @Published var volumeValue : Float = 1.0
     
     var playing = false
     var playerDuration: TimeInterval = 146
     var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     var index_n = 0
-    var currentSelection : String?
     
     
     static let sharedInstance = audioPlayer() // guarantees that there is only one instance of player at the time
     // if you refer to this shared instance variable
 //    singleton
+
     
-    
-//    init(selection :  MusicItem){
-//        self.selection = selection
-//    }
-    
-    init() {
-        currentSelection = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")[index_n]
+    init(_ currentSelection : MusicItem = MusicItem.init(path: URL(fileURLWithPath : Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")[0]))) {
+        self.currentSelection = currentSelection
     }
     
-//    init(musicStore : [String] = [""]){
-//        self.musicStore = musicStore
-//    }
     
-    func playAudioFile(_ index: Int) {
+    func playAudioFile(_ selection : MusicItem) {
         do {
-            if playing == true { // is this condition needed?
+            do {
+                  try AVAudioSession.sharedInstance().setCategory(.playback) // makes the songs play even if silent mode is on
+                currentSelection = selection
+               } catch(let error) {
+                   print(error.localizedDescription)
+               }
+            if playing { // is this condition needed?
                 playing = false
 //                stop the player somehow
                 action = nil
             }
-            if playing == false {
-                index_n = index
-                currentSelection = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")[index_n]
-                print(index_n)
+            if !playing {
                 if (action == nil) {
-                    action = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: musicStore[index]))
-//                    action = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: currentSelection.path))
+                    action = try AVAudioPlayer(contentsOf: currentSelection.path)
                     action!.numberOfLoops = 0
-//                    action?.volume = 1
+                    action?.volume = 1
                     action!.prepareToPlay()
                     action!.play()
                     playing = true
                     playerDuration = action!.duration
                 }
             }
-            if playing == false {
+            if !playing {
                 action!.play()
                 playing = true
             }
-//            print(URL(fileURLWithPath: musicStore[index_n]))
-//            print(URL(fileURLWithPath: currentSelection.path))
         } catch {
             print("Could not find and play the sound file.")
         }
@@ -104,56 +94,66 @@ class audioPlayer : ObservableObject {
         }
     
     func skipForward(){
-        action!.currentTime += 15
+        let wishTime = action!.currentTime + 15
+        let currentDuration = action!.duration
+        if wishTime < currentDuration {
+            action!.currentTime += 15 }
+        else {
+            playNext()
+            action?.currentTime = wishTime - currentDuration
+        }
     }
     
     
     func playNext(){
-        
-        
-//        var index_n = store.musicStore.firstIndex(of : currentSelection)!
+        index_n = store.musicStore.firstIndex(of : currentSelection)!
         index_n += 1
         
-        if index_n == musicStore.count {
+        if index_n == store.musicStore.count {
             index_n = 0
         }
         
-//        let nextIndex = store.musicStore.indices.contains(index_n) ? index_n : 0
-//        currentSelection = store.musicStore[nextIndex]
-        
-        playAudioFile(index_n)
-        currentSelection = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")[index_n]
+        currentSelection = store.musicStore[index_n]
+        playAudioFile(currentSelection)
     }
     
     func playPrevious(){
-        if action!.currentTime < 3 {
+//        if action!.currentTime < 3 {
+            index_n = store.musicStore.firstIndex(of : currentSelection)!
             index_n -= 1
             if index_n == -1 {
-                index_n = musicStore.count - 1
+                index_n = store.musicStore.count - 1
             }
-            playAudioFile(index_n)
-            currentSelection = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")[index_n]
-        }
-        else {
-            action?.currentTime = 0.0
-        }
+            currentSelection = store.musicStore[index_n]
+            playAudioFile(currentSelection)
+//        }
+//        else {
+//            action?.currentTime = 0.0
+//        }
     }
     
     func skipBack(){
-        action!.currentTime -= 15
+        let wishTime = action!.currentTime - 15
+        if wishTime > 15 {
+            action!.currentTime -= 15 }
+        else {
+            playPrevious()
+            action!.currentTime = action!.duration + wishTime // +  wishTime cause it's negative
+        }
+//        action!.currentTime -= 15
     }
     
     func changeSliderValue(_ setting :  String) { // current time and volume settings
         if setting == "volume"{
-            action?.volume = Float(playValue)
+            action!.volume = Float(volumeValue)
         }
         if setting == "time" {
             if playing {
                 pauseItem()
-                action?.currentTime = playValue
+                action!.currentTime = playValue
             }
             else {
-                action?.play()
+                action!.play()
                 playing = true
             }}
     }

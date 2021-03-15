@@ -7,6 +7,8 @@
 
 import UIKit
 import SwiftUI
+import UniformTypeIdentifiers
+import MobileCoreServices
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -24,10 +26,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Add `@Environment(\.managedObjectContext)` in the views that will need the context.
 //        let contentView = playerView().environment(\.managedObjectContext, context)
         let contentView = libraryView().environment(\.managedObjectContext, context).environmentObject(MusicStore())
+
+        
+//        let filesPickerView: () = filesPickerViewController.init(forOpeningContentTypes: [UTType(String(kUTTypeMP3))!]).openDocumentPicker()
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
-            window.rootViewController = UIHostingController(rootView: contentView)
+            window.rootViewController = UIHostingController(rootView: contentView.environmentObject(MusicStore()))
+            
+//            window.addSubview(filesPickerView)
             self.window = window
             window.makeKeyAndVisible()
         }

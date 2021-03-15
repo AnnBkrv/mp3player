@@ -13,8 +13,12 @@ import MediaPlayer
 class musicPlayer : ObservableObject {
     
     var action = MPMusicPlayerController.systemMusicPlayer
-    var musicStore = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "")
-    @Published var playValue: TimeInterval = 0.0 // do i need this variable?
+    var musicStore = Bundle.main.paths(forResourcesOfType: "mp3", inDirectory: "") // needs to be located somewhere else
+    
+//    let folderURL = URL(fileURLWithPath: Bundle.main.resourcePath!)
+//    var musicStore = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+    
+    @Published var playValue: TimeInterval = 0.0
     
     var playing = false
     var playerDuration: TimeInterval = 146
